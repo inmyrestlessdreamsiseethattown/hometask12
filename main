@@ -1,0 +1,194 @@
+
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <stdio.h>
+#include <locale.h>
+
+#define N 3
+
+typedef struct {
+    char routeName[100];
+    char startPoint[100];
+    char endPoint[100];
+
+    int startDay;
+    int startMonth;
+    int startYear;
+
+    int endDay;
+    int endMonth;
+    int endYear;
+
+    double distance;
+} Hike;
+
+int isLeapYear(int year) {
+    return (year % 400 == 0 ||
+           (year % 4 == 0 && year % 100 != 0));
+}
+
+int daysInMonth(int month, int year) {
+    int days[] = {
+        31, 28, 31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31
+    };
+
+    if (month == 2 && isLeapYear(year))
+        return 29;
+
+    return days[month - 1];
+}
+
+int dateToDays(int day, int month, int year) {
+    int total = 0;
+
+    for (int y = 1; y < year; y++) {
+        total += isLeapYear(y) ? 366 : 365;
+    }
+
+    for (int m = 1; m < month; m++) {
+        total += daysInMonth(m, year);
+    }
+
+    total += day;
+
+    return total;
+}
+
+int getDuration(Hike h) {
+    int start = dateToDays(
+        h.startDay, h.startMonth, h.startYear
+    );
+
+    int end = dateToDays(
+        h.endDay, h.endMonth, h.endYear
+    );
+
+    return end - start;
+}
+
+void inputHike(Hike* h, int number) {
+    printf("\n--- Поход № %d ---\n", number);
+
+    printf("Название маршрута (без пробелов): ");
+    scanf(" %99s", h->routeName);
+
+    printf("Начальный пункт (без пробелов): ");
+    scanf(" %99s", h->startPoint);
+
+    printf("Конечный пункт (без пробелов): ");
+    scanf(" %99s", h->endPoint);
+
+    printf("Дата начала (ДД ММ ГГГГ): ");
+    scanf("%d %d %d",
+          &h->startDay,
+          &h->startMonth,
+          &h->startYear);
+
+    printf("Дата окончания (ДД ММ ГГГГ): ");
+    scanf("%d %d %d",
+          &h->endDay,
+          &h->endMonth,
+          &h->endYear);
+
+    printf("Протяженность (км): ");
+    scanf("%lf", &h->distance);
+}
+
+void saveToFile(Hike hikes[]) {
+    FILE* file = fopen("hikes.txt", "w");
+
+    if (file == NULL) {
+        printf("Ошибка открытия файла!\n");
+        return;
+    }
+
+    for (int i = 0; i < N; i++) {
+        fprintf(file,
+            "%s %s %s %d %d %d %d %d %d %.2f\n",
+            hikes[i].routeName,
+            hikes[i].startPoint,
+            hikes[i].endPoint,
+            hikes[i].startDay,
+            hikes[i].startMonth,
+            hikes[i].startYear,
+            hikes[i].endDay,
+            hikes[i].endMonth,
+            hikes[i].endYear,
+            hikes[i].distance
+        );
+    }
+
+    fclose(file);
+
+    printf("\nДанные успешно записаны в файл hikes.txt\n");
+}
+
+void printHike(Hike h) {
+    printf("\nНазвание маршрута: %s\n", h.routeName);
+    printf("Начальный пункт: %s\n", h.startPoint);
+    printf("Конечный пункт: %s\n", h.endPoint);
+
+    printf("Дата начала: %02d.%02d.%04d\n",
+           h.startDay, h.startMonth, h.startYear);
+
+    printf("Дата окончания: %02d.%02d.%04d\n",
+           h.endDay, h.endMonth, h.endYear);
+
+    printf("Протяженность: %.2f км\n", h.distance);
+
+    printf("Продолжительность: %d дн.\n",
+           getDuration(h));
+}
+
+// Отбор походов по условию
+void findHikes(Hike hikes[], double minDistance) {
+    int found = 0;
+
+    printf("\n====================================\n");
+    printf("РЕЗУЛЬТАТЫ ОТБОРА ПОХОДОВ\n");
+    printf("====================================\n");
+
+    for (int i = 0; i < N; i++) {
+        int duration = getDuration(hikes[i]);
+
+        if (duration > 1 &&
+            hikes[i].distance >= minDistance) {
+
+            printHike(hikes[i]);
+            found++;
+        }
+    }
+
+    if (found == 0) {
+        printf("\nПодходящие походы не найдены.\n");
+    }
+
+    printf("\nВсего найдено походов: %d\n", found);
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+
+    Hike hikes[N];
+    double minDistance;
+
+    printf("====================================\n");
+    printf("          УЧЕТ ПОХОДОВ\n");
+    printf("====================================\n");
+
+    for (int i = 0; i < N; i++) {
+        inputHike(&hikes[i], i + 1);
+    }
+
+    saveToFile(hikes);
+
+    printf("\nВведите минимальную протяженность (км): ");
+    scanf("%lf", &minDistance);
+
+    findHikes(hikes, minDistance);
+
+    printf("\nПрограмма завершена.\n");
+
+    return 0;
+}
